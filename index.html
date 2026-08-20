@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Hour by Hour — Work Log</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #14161A;
@@ -17,6 +16,7 @@
     --teal: #5FA8A0;
     --clay: #C77B5E;
     --violet: #8B8FE8;
+    --plum: #B06AB3;
   }
   * { box-sizing: border-box; }
   body {
@@ -48,6 +48,7 @@
   input[type="range"] { flex: 1; accent-color: var(--amber); }
   .range-val { font-size: 12px; min-width: 14px; text-align: right; }
   textarea { width: 100%; min-height: 50px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px; font-size: 12px; resize: vertical; font-family: inherit; }
+  select { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 5px 8px; font-size: 12px; }
   .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: flex-end; justify-content: center; z-index: 50; }
   .overlay.open { display: flex; }
   .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 16px 16px 0 0; padding: 18px; width: 100%; max-width: 500px; max-height: 88vh; overflow-y: auto; }
@@ -62,13 +63,18 @@
   .ghost-btn { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; }
   .empty-state { color: var(--muted2); font-size: 13px; text-align: center; padding: 40px 10px; }
   .empty-state-small { color: var(--muted2); font-size: 12px; padding: 12px 0; }
-  .chart-box { position: relative; height: 220px; margin-bottom: 6px; }
-  .chart-box.short { height: 200px; }
+  .chart-box { position: relative; width: 100%; height: 210px; margin-bottom: 6px; }
+  .chart-box.short { height: 190px; }
+  .chart-box svg { width: 100%; height: 100%; display: block; }
   .view { display: none; }
   .view.active { display: block; }
-  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; flex-shrink: 0; }
   .save-note { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--border); color: var(--muted); font-size: 11px; padding: 6px 12px; border-radius: 20px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
   .save-note.show { opacity: 1; }
+  .metric-toggles { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  .metric-toggle { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; }
+  .metric-toggle input { accent-color: var(--amber); cursor: pointer; }
+  .scatter-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
 </style>
 </head>
 <body>
@@ -109,13 +115,40 @@
     <div id="trendsEmpty" class="empty-state">Log a few hours first — trends will show up here once there's data to compare.</div>
     <div id="trendsContent" style="display:none">
       <div class="panel-title">Metrics over time</div>
-      <div class="chart-box"><canvas id="trendChart"></canvas></div>
-      <div class="panel-title" style="margin-top:20px">Sleep vs. daily average efficiency</div>
+      <div class="metric-toggles" id="metricToggles"></div>
+      <div class="chart-box"><svg id="trendChart" viewBox="0 0 640 210" preserveAspectRatio="none"></svg></div>
+
+      <div class="panel-title" style="margin-top:24px">Sleep vs. daily average</div>
       <div id="sleepEmpty" class="empty-state-small">Log sleep hours on a day you also track hours, and this will fill in.</div>
-      <div class="chart-box short" id="sleepChartBox" style="display:none"><canvas id="sleepChart"></canvas></div>
-      <div class="panel-title" style="margin-top:20px">Morning attitude vs. daily average efficiency</div>
+      <div id="sleepChartWrap" style="display:none">
+        <div class="scatter-header">
+          <span class="small-label">Compare against</span>
+          <select id="sleepMetricSelect">
+            <option value="efficiency">Efficiency</option>
+            <option value="focus">Focus</option>
+            <option value="mood">Mood</option>
+            <option value="pace">Time pace</option>
+            <option value="energy">Energy</option>
+          </select>
+        </div>
+        <div class="chart-box short"><svg id="sleepChart" viewBox="0 0 640 190" preserveAspectRatio="none"></svg></div>
+      </div>
+
+      <div class="panel-title" style="margin-top:24px">Morning attitude vs. daily average</div>
       <div id="attitudeEmpty" class="empty-state-small">Rate a few mornings and this will fill in.</div>
-      <div class="chart-box short" id="attitudeChartBox" style="display:none"><canvas id="attitudeChart"></canvas></div>
+      <div id="attitudeChartWrap" style="display:none">
+        <div class="scatter-header">
+          <span class="small-label">Compare against</span>
+          <select id="attitudeMetricSelect">
+            <option value="efficiency">Efficiency</option>
+            <option value="focus">Focus</option>
+            <option value="mood">Mood</option>
+            <option value="pace">Time pace</option>
+            <option value="energy">Energy</option>
+          </select>
+        </div>
+        <div class="chart-box short"><svg id="attitudeChart" viewBox="0 0 640 190" preserveAspectRatio="none"></svg></div>
+      </div>
     </div>
   </div>
 </div>
@@ -145,12 +178,21 @@ const METRICS = [
   { key: "pace", label: "Time pace", color: "#8B8FE8", hint: "1 = dragged, 5 = flew by" },
   { key: "fatigue", label: "Fatigue", color: "#B06AB3", hint: "1 = wired, 5 = drained" },
 ];
-const HOURS = Array.from({length: 17}, (_, i) => i + 6); // 6am - 10pm
+// derived trend metrics shown on the trends charts (fatigue/distraction inverted to energy/focus so higher = always better)
+const TREND_METRICS = [
+  { key: "focus", label: "Focus", color: "#D9A24B" },
+  { key: "efficiency", label: "Efficiency", color: "#5FA8A0" },
+  { key: "mood", label: "Mood", color: "#C77B5E" },
+  { key: "pace", label: "Time pace", color: "#8B8FE8" },
+  { key: "energy", label: "Energy", color: "#B06AB3" },
+];
+const HOURS = Array.from({length: 9}, (_, i) => i + 8); // 8am - 5pm
 
 const pad = n => String(n).padStart(2, "0");
 const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const fmtHour = h => { const p = h >= 12 ? "PM" : "AM"; const hh = h % 12 === 0 ? 12 : h % 12; return `${hh}${p}`; };
 const fmtDateLabel = iso => { const [y,m,d] = iso.split("-").map(Number); return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}); };
+const fmtDateShort = iso => { const [y,m,d] = iso.split("-").map(Number); return new Date(y,m-1,d).toLocaleDateString(undefined,{month:"short",day:"numeric"}); };
 
 function loadJSON(key, fallback) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
@@ -169,6 +211,9 @@ function flashSaved() {
 
 let hourlyLog = loadJSON("hourly-log", {});
 let dailyLog = loadJSON("daily-log", {});
+let visibleMetrics = loadJSON("trend-visible-metrics", { focus: true, efficiency: true, mood: true, pace: true, energy: true });
+let sleepMetric = localStorage.getItem("trend-sleep-metric") || "efficiency";
+let attitudeMetric = localStorage.getItem("trend-attitude-metric") || "efficiency";
 let currentDate = toISO(new Date());
 let openHour = null;
 
@@ -279,7 +324,120 @@ function clearHour() {
   renderTrends();
 }
 
-let trendChartInst, sleepChartInst, attitudeChartInst;
+// ---------- SVG chart helpers (no external libraries) ----------
+const SVG_NS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+function drawLineChart(svgId, rows, seriesList) {
+  const svg = document.getElementById(svgId);
+  svg.innerHTML = "";
+  const W = 640, H = 210;
+  const padL = 26, padR = 8, padT = 8, padB = 20;
+  const chartW = W - padL - padR, chartH = H - padT - padB;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+  // y gridlines 1..5
+  for (let v = 1; v <= 5; v++) {
+    const y = padT + chartH - ((v - 1) / 4) * chartH;
+    svg.appendChild(svgEl("line", { x1: padL, x2: W - padR, y1: y, y2: y, stroke: "#2A2E37", "stroke-width": 1 }));
+    const t = svgEl("text", { x: 2, y: y + 3, fill: "#8A8D94", "font-size": 9 });
+    t.textContent = v;
+    svg.appendChild(t);
+  }
+
+  const n = rows.length;
+  const xAt = i => n <= 1 ? padL : padL + (i / (n - 1)) * chartW;
+  const yAt = v => padT + chartH - ((v - 1) / 4) * chartH;
+
+  seriesList.forEach(s => {
+    const pts = rows.map((r, i) => `${xAt(i)},${yAt(r[s.key] || 3)}`).join(" ");
+    svg.appendChild(svgEl("polyline", { points: pts, fill: "none", stroke: s.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  });
+
+  // x-axis labels: first, middle, last (fewer if n small)
+  const idxs = n <= 3 ? rows.map((_, i) => i) : [0, Math.floor((n - 1) / 2), n - 1];
+  [...new Set(idxs)].forEach(i => {
+    const t = svgEl("text", { x: xAt(i), y: H - 4, fill: "#8A8D94", "font-size": 9, "text-anchor": i === 0 ? "start" : (i === n - 1 ? "end" : "middle") });
+    t.textContent = rows[i].label;
+    svg.appendChild(t);
+  });
+}
+
+function drawScatterChart(svgId, points, xLabel, yLabel, color) {
+  const svg = document.getElementById(svgId);
+  svg.innerHTML = "";
+  const W = 640, H = 190;
+  const padL = 30, padR = 10, padT = 10, padB = 28;
+  const chartW = W - padL - padR, chartH = H - padT - padB;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+  const xs = points.map(p => p.x);
+  let xMin = Math.min(...xs), xMax = Math.max(...xs);
+  if (xMin === xMax) { xMin -= 1; xMax += 1; }
+  const xPad = (xMax - xMin) * 0.1;
+  xMin -= xPad; xMax += xPad;
+
+  // y fixed 1..5
+  for (let v = 1; v <= 5; v++) {
+    const y = padT + chartH - ((v - 1) / 4) * chartH;
+    svg.appendChild(svgEl("line", { x1: padL, x2: W - padR, y1: y, y2: y, stroke: "#2A2E37", "stroke-width": 1 }));
+    const t = svgEl("text", { x: 2, y: y + 3, fill: "#8A8D94", "font-size": 9 });
+    t.textContent = v;
+    svg.appendChild(t);
+  }
+  // x ticks: min/max
+  [xMin + xPad, xMax - xPad].forEach((v, i) => {
+    const x = padL + ((v - xMin) / (xMax - xMin)) * chartW;
+    const t = svgEl("text", { x, y: H - 6, fill: "#8A8D94", "font-size": 9, "text-anchor": i === 0 ? "start" : "end" });
+    t.textContent = Number(v.toFixed(1));
+    svg.appendChild(t);
+  });
+
+  points.forEach(p => {
+    const cx = padL + ((p.x - xMin) / (xMax - xMin)) * chartW;
+    const cy = padT + chartH - ((p.y - 1) / 4) * chartH;
+    svg.appendChild(svgEl("circle", { cx, cy, r: 5, fill: color, "fill-opacity": 0.85 }));
+  });
+
+  const xt = svgEl("text", { x: W / 2, y: H - 16, fill: "#6F7280", "font-size": 9, "text-anchor": "middle" });
+  xt.textContent = xLabel;
+  svg.appendChild(xt);
+}
+
+function computeDailyAverages(date) {
+  const entries = Object.values(hourlyLog[date] || {});
+  if (!entries.length) return null;
+  const sum = { focus: 0, efficiency: 0, mood: 0, pace: 0, energy: 0 };
+  entries.forEach(e => {
+    sum.focus += 6 - (e.distraction || 3);
+    sum.efficiency += e.efficiency || 3;
+    sum.mood += e.mood || 3;
+    sum.pace += e.pace || 3;
+    sum.energy += 6 - (e.fatigue || 3);
+  });
+  const n = entries.length;
+  return { focus: sum.focus/n, efficiency: sum.efficiency/n, mood: sum.mood/n, pace: sum.pace/n, energy: sum.energy/n };
+}
+
+function renderMetricToggles() {
+  const wrap = document.getElementById("metricToggles");
+  wrap.innerHTML = "";
+  TREND_METRICS.forEach(m => {
+    const label = document.createElement("label");
+    label.className = "metric-toggle";
+    label.innerHTML = `<input type="checkbox" ${visibleMetrics[m.key] ? "checked" : ""} /> <span class="dot" style="background:${m.color}"></span>${m.label}`;
+    label.querySelector("input").onchange = e => {
+      visibleMetrics[m.key] = e.target.checked;
+      saveJSON("trend-visible-metrics", visibleMetrics);
+      renderTrends();
+    };
+    wrap.appendChild(label);
+  });
+}
 
 function renderTrends() {
   const rows = [];
@@ -287,7 +445,7 @@ function renderTrends() {
     Object.keys(hourlyLog[d]).sort((a,b) => Number(a)-Number(b)).forEach(h => {
       const e = hourlyLog[d][h];
       rows.push({
-        label: `${fmtDateLabel(d)} ${fmtHour(Number(h))}`,
+        label: `${fmtDateShort(d)} ${fmtHour(Number(h))}`,
         focus: 6 - (e.distraction || 3),
         efficiency: e.efficiency || 3,
         mood: e.mood || 3,
@@ -305,91 +463,45 @@ function renderTrends() {
   document.getElementById("trendsEmpty").style.display = "none";
   document.getElementById("trendsContent").style.display = "block";
 
-  const ctx1 = document.getElementById("trendChart").getContext("2d");
-  if (trendChartInst) trendChartInst.destroy();
-  trendChartInst = new Chart(ctx1, {
-    type: "line",
-    data: {
-      labels: rows.map(r => r.label),
-      datasets: [
-        { label: "Focus", data: rows.map(r => r.focus), borderColor: "#D9A24B", tension: 0.3, pointRadius: 0 },
-        { label: "Efficiency", data: rows.map(r => r.efficiency), borderColor: "#5FA8A0", tension: 0.3, pointRadius: 0 },
-        { label: "Mood", data: rows.map(r => r.mood), borderColor: "#C77B5E", tension: 0.3, pointRadius: 0 },
-        { label: "Time pace", data: rows.map(r => r.pace), borderColor: "#8B8FE8", tension: 0.3, pointRadius: 0 },
-        { label: "Energy", data: rows.map(r => r.energy), borderColor: "#B06AB3", tension: 0.3, pointRadius: 0 },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      scales: {
-        y: { min: 1, max: 5, ticks: { color: "#8A8D94", font: { size: 10 } }, grid: { color: "#2A2E37" } },
-        x: { ticks: { color: "#8A8D94", font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, grid: { color: "#2A2E37" } }
-      },
-      plugins: { legend: { labels: { color: "#8A8D94", font: { size: 11 } } } }
-    }
-  });
+  renderMetricToggles();
+  const activeSeries = TREND_METRICS.filter(m => visibleMetrics[m.key]);
+  drawLineChart("trendChart", rows, activeSeries);
 
   // sleep correlation
   const sleepRows = [];
   Object.keys(dailyLog).forEach(d => {
     const c = dailyLog[d];
     const sleep = parseFloat(c.sleepHours);
-    if (!sleep || !hourlyLog[d]) return;
-    const entries = Object.values(hourlyLog[d]);
-    if (!entries.length) return;
-    const avgEff = entries.reduce((a,e) => a + (e.efficiency||3), 0) / entries.length;
-    sleepRows.push({ x: sleep, y: Number(avgEff.toFixed(2)) });
+    if (!sleep) return;
+    const avgs = computeDailyAverages(d);
+    if (!avgs) return;
+    sleepRows.push({ x: sleep, y: Number(avgs[sleepMetric].toFixed(2)) });
   });
-  const sleepBox = document.getElementById("sleepChartBox");
+  const sleepWrap = document.getElementById("sleepChartWrap");
   const sleepEmpty = document.getElementById("sleepEmpty");
   if (sleepRows.length) {
-    sleepEmpty.style.display = "none"; sleepBox.style.display = "block";
-    const ctx2 = document.getElementById("sleepChart").getContext("2d");
-    if (sleepChartInst) sleepChartInst.destroy();
-    sleepChartInst = new Chart(ctx2, {
-      type: "scatter",
-      data: { datasets: [{ label: "Days", data: sleepRows, backgroundColor: "#5FA8A0" }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        scales: {
-          x: { title: { display: true, text: "Sleep (hrs)", color: "#8A8D94" }, ticks: { color: "#8A8D94" }, grid: { color: "#2A2E37" } },
-          y: { min: 1, max: 5, title: { display: true, text: "Avg efficiency", color: "#8A8D94" }, ticks: { color: "#8A8D94" }, grid: { color: "#2A2E37" } }
-        },
-        plugins: { legend: { display: false } }
-      }
-    });
-  } else { sleepEmpty.style.display = "block"; sleepBox.style.display = "none"; }
+    sleepEmpty.style.display = "none"; sleepWrap.style.display = "block";
+    const label = TREND_METRICS.find(m => m.key === sleepMetric).label;
+    drawScatterChart("sleepChart", sleepRows, "Sleep (hrs)", `Avg ${label}`, "#5FA8A0");
+  } else { sleepEmpty.style.display = "block"; sleepWrap.style.display = "none"; }
 
   // attitude correlation
   const attRows = [];
   Object.keys(dailyLog).forEach(d => {
     const c = dailyLog[d];
     const att = Number(c.morningAttitude);
-    if (!att || !hourlyLog[d]) return;
-    const entries = Object.values(hourlyLog[d]);
-    if (!entries.length) return;
-    const avgEff = entries.reduce((a,e) => a + (e.efficiency||3), 0) / entries.length;
-    attRows.push({ x: att, y: Number(avgEff.toFixed(2)) });
+    if (!att) return;
+    const avgs = computeDailyAverages(d);
+    if (!avgs) return;
+    attRows.push({ x: att, y: Number(avgs[attitudeMetric].toFixed(2)) });
   });
-  const attBox = document.getElementById("attitudeChartBox");
+  const attWrap = document.getElementById("attitudeChartWrap");
   const attEmpty = document.getElementById("attitudeEmpty");
   if (attRows.length) {
-    attEmpty.style.display = "none"; attBox.style.display = "block";
-    const ctx3 = document.getElementById("attitudeChart").getContext("2d");
-    if (attitudeChartInst) attitudeChartInst.destroy();
-    attitudeChartInst = new Chart(ctx3, {
-      type: "scatter",
-      data: { datasets: [{ label: "Days", data: attRows, backgroundColor: "#D9A24B" }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        scales: {
-          x: { min: 1, max: 5, title: { display: true, text: "Morning attitude", color: "#8A8D94" }, ticks: { color: "#8A8D94" }, grid: { color: "#2A2E37" } },
-          y: { min: 1, max: 5, title: { display: true, text: "Avg efficiency", color: "#8A8D94" }, ticks: { color: "#8A8D94" }, grid: { color: "#2A2E37" } }
-        },
-        plugins: { legend: { display: false } }
-      }
-    });
-  } else { attEmpty.style.display = "block"; attBox.style.display = "none"; }
+    attEmpty.style.display = "none"; attWrap.style.display = "block";
+    const label = TREND_METRICS.find(m => m.key === attitudeMetric).label;
+    drawScatterChart("attitudeChart", attRows, "Morning attitude", `Avg ${label}`, "#D9A24B");
+  } else { attEmpty.style.display = "block"; attWrap.style.display = "none"; }
 }
 
 // events
@@ -411,6 +523,18 @@ document.getElementById("sleepInput").onchange = saveDailyContext;
 document.getElementById("dailyNote").onblur = saveDailyContext;
 document.getElementById("attitudeInput").oninput = e => { document.getElementById("attitudeVal").textContent = e.target.value; };
 document.getElementById("attitudeInput").onchange = saveDailyContext;
+document.getElementById("sleepMetricSelect").value = sleepMetric;
+document.getElementById("sleepMetricSelect").onchange = e => {
+  sleepMetric = e.target.value;
+  localStorage.setItem("trend-sleep-metric", sleepMetric);
+  renderTrends();
+};
+document.getElementById("attitudeMetricSelect").value = attitudeMetric;
+document.getElementById("attitudeMetricSelect").onchange = e => {
+  attitudeMetric = e.target.value;
+  localStorage.setItem("trend-attitude-metric", attitudeMetric);
+  renderTrends();
+};
 
 document.getElementById("tabLog").onclick = () => {
   document.getElementById("tabLog").classList.add("active");
